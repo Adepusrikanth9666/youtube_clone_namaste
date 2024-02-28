@@ -1,12 +1,55 @@
-import React from "react";
-import { useDispatch } from "react-redux";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { toggleMenu } from "../utils/appSlice";
+import {
+  YOUTUBE_SEARCH_API,
+  YOUTUBE_VIDEOS_SEARCH_API,
+} from "../utils/constants";
+import { cacheResults } from "../utils/searchSlice";
 
 const Head = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestion] = useState(false);
   const dispatch = useDispatch();
+  const searchCache = useSelector((store) => store.search);
+  useEffect(() => {
+    // make a api call on every key press
+    // but  if the differenfce b/w the two keystrokes is <200ms then call the API.
+    const timer = setTimeout(() => {
+      if (searchCache[searchQuery]) {
+        setSearchQuery(searchCache[searchQuery]);
+      } else {
+        getSearchSuggetion();
+      }
+    }, 200);
+    searchOnClick();
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
+
+  const getSearchSuggetion = async () => {
+    const data = await fetch(YOUTUBE_SEARCH_API + searchQuery);
+    const json = await data.json();
+    setSuggestions(json[1]);
+    dispatch(
+      cacheResults({
+        [searchQuery]: json[1],
+      })
+    );
+  };
+
+  const searchOnClick = async () => {
+    const data = await fetch(YOUTUBE_VIDEOS_SEARCH_API);
+    const json = await data.json();
+    console.log("json", json);
+  };
   const toggleMenuHandler = () => {
     dispatch(toggleMenu());
   };
+
   return (
     <div className="grid grid-flow-col shadow-lg p-5 m-2 justify-between">
       <div className="flex col-span-1  items-center">
@@ -24,18 +67,38 @@ const Head = () => {
           />
         </a>
       </div>
-      <div className="flex col-span-10 items-center justify-center">
-        <input
-          type="text"
-          className="w-1/2 p-2 rounded-l-3xl border border-gray-500"
-        />
-        <button className="border border-gray-800 p-2 rounded-r-3xl ">
-          <img
-            className="h-6  hover:opacity-45"
-            src="data:image/png;base64,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"
-            alt="search_icon"
+      <div className="col-span-10 ">
+        <div className=" flex">
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            type="text"
+            className="w-1/2 p-2 rounded-l-3xl border border-gray-500"
+            onFocus={() => setShowSuggestion(true)}
+            onBlur={() => setShowSuggestion(false)}
           />
-        </button>
+          <button className="border border-gray-800 p-2 rounded-r-3xl ">
+            <img
+              className="h-6  hover:opacity-45"
+              src="data:image/png;base64,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"
+              alt="search_icon"
+            />
+          </button>
+        </div>
+        {showSuggestions && (
+          <div className=" absolute bg-white py-2 px-2 w-[37rem]  border border-gray-100">
+            <ul>
+              {suggestions.map((search, index) => (
+                <li
+                  key={index}
+                  className=" py-2 px-3 shadow-sm hover:bg-gray-100"
+                >
+                  🔍{search}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
       <div className="flex col-span-1 items-center">
         <img

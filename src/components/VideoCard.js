@@ -1,8 +1,6 @@
 import React from "react";
 
 const VideoCard = ({ info }) => {
-  console.log("info", info);
-
   const { snippet, statistics } = info;
   const { channelTitle, thumbnails, title } = snippet;
   return (
@@ -14,6 +12,14 @@ const VideoCard = ({ info }) => {
         <li>{statistics?.viewCount}Viwes</li>
         <li></li>
       </ul>
+    </div>
+  );
+};
+
+export const RedMorderedCard = ({ info }) => {
+  return (
+    <div className="p-1 m-1 border border-red-600">
+      {info && <VideoCard info={info} />}
     </div>
   );
 };
